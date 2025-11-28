@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Faith Immaculate Academy CBT
 
 This repository contains the Faith Immaculate Academy computer-based testing application.
@@ -17,3 +18,6 @@ CSV rules (header optional):
 - `points` (optional): integer > 0 (defaults to 1)
 
 Example: see `/questions-template.csv` in the running app or `scripts/questions-template.csv` in this repo.
+=======
+# fiaCbtSystem2-main
+>>>>>>> 21a7306ba1d4f4806157204d868747c76d117404
