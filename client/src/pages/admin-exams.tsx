@@ -210,7 +210,6 @@ function ExamForm({
     description: "",
     subject: "",
     duration: 60,
-    duration: 60,
     passingScore: 60,
     questionIds: [] as string[],
     classLevel: "JSS1",
@@ -223,7 +222,7 @@ function ExamForm({
     (formData.subject ? q.subject === formData.subject : true) &&
     (formData.classLevel ? q.classLevel === formData.classLevel : true)
   );
-  
+
   const createExamMutation = useMutation({
     mutationFn: (data: typeof formData) => apiRequest("POST", "/api/exams", { ...data, assignRandomQuestions }),
     onSuccess: () => {
