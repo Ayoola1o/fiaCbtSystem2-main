@@ -2,10 +2,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 export default function AdminStudents() {
   const [studentsList, setStudentsList] = useState<{ id: string; name: string; studentId: string; classLevel?: string; sex?: string }[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Edit state
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<{ id: string; name: string; studentId: string; classLevel?: string; sex?: string } | null>(null);
 
   const fetchStudents = async () => {
     try {
@@ -21,6 +34,31 @@ export default function AdminStudents() {
   useEffect(() => {
     fetchStudents();
   }, []);
+
+  const handleUpdateStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStudent) return;
+    try {
+      const resp = await fetch(`/api/students/${editingStudent.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editingStudent.name,
+          studentId: editingStudent.studentId,
+          classLevel: editingStudent.classLevel,
+          sex: editingStudent.sex
+        }),
+      });
+      if (!resp.ok) throw new Error("Update failed");
+      setIsEditOpen(false);
+      setEditingStudent(null);
+      fetchStudents();
+      alert("Student updated successfully");
+    } catch (e) {
+      console.error(e);
+      alert("Failed to update student");
+    }
+  };
 
   const filteredStudents = studentsList.filter(
     (s) =>
@@ -105,17 +143,19 @@ export default function AdminStudents() {
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ name, studentId, classLevel, sex }),
                     });
-                      if (!resp.ok) throw new Error("Failed to add student");
-                      alert("Student added");
-                      if (nameEl) nameEl.value = "";
-                      if (idEl) idEl.value = "";
-                      if (classLevelEl) classLevelEl.value = "";
-                      if (sexEl) sexEl.value = "";
-                      fetchStudents();
-                  } catch (e) {
-                    // eslint-disable-next-line no-console
+                    if (!resp.ok) {
+                      const err = await resp.json();
+                      throw new Error(err.error || "Failed to add student");
+                    }
+                    alert("Student added");
+                    if (nameEl) nameEl.value = "";
+                    if (idEl) idEl.value = "";
+                    if (classLevelEl) classLevelEl.value = "";
+                    if (sexEl) sexEl.value = "";
+                    fetchStudents();
+                  } catch (e: any) {
                     console.error(e);
-                    alert("Failed to add student");
+                    alert(e.message || "Failed to add student");
                   }
                 }}
               >
@@ -249,24 +289,9 @@ export default function AdminStudents() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={async () => {
-                              const newName = prompt("Edit name", s.name) || s.name;
-                              const newSid = prompt("Edit student id", s.studentId) || s.studentId;
-                              const newClassLevel = prompt("Edit class level", s.classLevel || "") || s.classLevel;
-                              const newSex = prompt("Edit sex (M/F)", s.sex || "") || s.sex;
-                              try {
-                                const resp = await fetch(`/api/students/${s.id}`, {
-                                  method: "PATCH",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ name: newName, studentId: newSid, classLevel: newClassLevel, sex: newSex }),
-                                });
-                                if (!resp.ok) throw new Error("Update failed");
-                                fetchStudents();
-                              } catch (e) {
-                                // eslint-disable-next-line no-console
-                                console.error(e);
-                                alert("Failed to update student");
-                              }
+                            onClick={() => {
+                              setEditingStudent(s);
+                              setIsEditOpen(true);
                             }}
                           >
                             Edit
@@ -274,6 +299,7 @@ export default function AdminStudents() {
                           <Button
                             size="sm"
                             variant="destructive"
+                            className="ml-2"
                             onClick={async () => {
                               if (!confirm(`Delete ${s.name}?`)) return;
                               try {
@@ -292,6 +318,7 @@ export default function AdminStudents() {
                           <Button
                             size="sm"
                             variant="secondary"
+                            className="ml-2"
                             onClick={() => {
                               alert(`Student Details:\nName: ${s.name}\nStudent ID: ${s.studentId}\nClass Level: ${s.classLevel || "-"}\nSex: ${s.sex || "-"}`);
                             }}
@@ -301,6 +328,7 @@ export default function AdminStudents() {
                           <Button
                             size="sm"
                             variant="outline"
+                            className="ml-2"
                             onClick={async () => {
                               if (!confirm(`Reset password for ${s.name}?`)) return;
                               // Placeholder: Implement actual reset logic as needed
@@ -319,6 +347,75 @@ export default function AdminStudents() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Student</DialogTitle>
+            <DialogDescription>Make changes to the student profile here.</DialogDescription>
+          </DialogHeader>
+          {editingStudent && (
+            <form onSubmit={handleUpdateStudent} className="space-y-4">
+              <div>
+                <Label htmlFor="edit-name">Name</Label>
+                <Input
+                  id="edit-name"
+                  value={editingStudent.name}
+                  onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-studentId">Student ID</Label>
+                <Input
+                  id="edit-studentId"
+                  value={editingStudent.studentId}
+                  onChange={(e) => setEditingStudent({ ...editingStudent, studentId: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-classLevel">Class Level</Label>
+                <select
+                  id="edit-classLevel"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={editingStudent.classLevel || ""}
+                  onChange={(e) => setEditingStudent({ ...editingStudent, classLevel: e.target.value })}
+                >
+                  <option value="">Select</option>
+                  <option value="JSS1">JSS1</option>
+                  <option value="JSS2">JSS2</option>
+                  <option value="JSS3">JSS3</option>
+                  <option value="SS1">SS1</option>
+                  <option value="SS2">SS2</option>
+                  <option value="SS3">SS3</option>
+                  <option value="WAEC">WAEC</option>
+                  <option value="NECO">NECO</option>
+                  <option value="GCE WAEC">GCE WAEC</option>
+                  <option value="GCE NECO">GCE NECO</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="edit-sex">Sex</Label>
+                <select
+                  id="edit-sex"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={editingStudent.sex || ""}
+                  onChange={(e) => setEditingStudent({ ...editingStudent, sex: e.target.value })}
+                >
+                  <option value="">Select</option>
+                  <option value="M">M</option>
+                  <option value="F">F</option>
+                </select>
+              </div>
+              <DialogFooter>
+                <Button type="submit">Save Changes</Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

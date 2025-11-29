@@ -127,12 +127,14 @@ export const students = pgTable("students", {
   name: text("name").notNull(),
   studentId: text("student_id").notNull().unique(),
   classLevel: text("class_level").notNull(),
+  sex: text("sex"),
 });
 
 export const insertStudentSchema = createInsertSchema(students).omit({
   id: true,
 }).extend({
   classLevel: z.enum(classLevels),
+  sex: z.enum(["M", "F"]).optional(),
 });
 
 export type InsertStudent = z.infer<typeof insertStudentSchema>;

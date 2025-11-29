@@ -1,0 +1,206 @@
+import React from 'react';
+
+// --- Helper Components ---
+
+// Component for the Header (Logo and Title)
+const ReportHeader = ({ schoolName, schoolLogoUrl, examTitle }: { schoolName: string, schoolLogoUrl: string, examTitle: string }) => (
+    <header className="flex justify-between items-center pb-4 mb-6 border-b-2 border-gray-300">
+        <div className="flex items-center">
+            <img
+                src={schoolLogoUrl}
+                alt="School Logo"
+                className="w-16 h-16 object-contain"
+                onError={(e) => { (e.target as HTMLImageElement).onerror = null; (e.target as HTMLImageElement).src = "https://placehold.co/150x50/3b82f6/ffffff?text=LOGO"; }}
+            />
+            <h1 className="text-xl md:text-2xl font-extrabold ml-4 text-gray-800 uppercase leading-none print:text-lg">
+                {schoolName}
+            </h1>
+        </div>
+        <h2 className="text-lg md:text-xl font-semibold text-blue-600 text-right print:text-base">
+            {examTitle}
+        </h2>
+    </header>
+);
+
+// Component for Candidate Information and Key Metrics
+const CandidateSummary = ({ candidate, overallResult }: { candidate: any, overallResult: any }) => {
+    const statusColor = overallResult.status === 'PASS' ? 'bg-green-100 text-green-700 border-green-400' : 'bg-red-100 text-red-700 border-red-400';
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 print:mb-6 print:gap-4">
+            {/* Candidate Details Panel */}
+            <div className="md:col-span-2 p-4 bg-gray-50 rounded-lg border border-gray-200 print:p-2 print:border-dotted">
+                <h3 className="font-bold text-gray-700 mb-2 border-b border-gray-200 pb-1 text-base print:text-sm">Candidate Information</h3>
+                <div className="text-sm grid grid-cols-2 gap-y-1">
+                    <p><span className="font-semibold">Name:</span> {candidate.name}</p>
+                    <p><span className="font-semibold">ID:</span> {candidate.studentId}</p>
+                    <p><span className="font-semibold">Grade/Class:</span> {candidate.gradeLevel}</p>
+                    <p><span className="font-semibold">Date Taken:</span> {candidate.date}</p>
+                </div>
+            </div>
+
+            {/* Score Summary Panel */}
+            <div className={`p-4 rounded-lg border-4 ${statusColor} flex flex-col justify-center items-center`}>
+                <div className="text-center">
+                    <p className="text-lg font-bold">Overall Percentage</p>
+                    <p className={`text-5xl font-extrabold leading-none ${overallResult.status === 'PASS' ? 'text-green-600' : 'text-red-600'} my-1 print:text-4xl`}>
+                        {overallResult.percentage.toFixed(1)}%
+                    </p>
+                    <p className="text-sm">Score: {overallResult.score}/{overallResult.total}</p>
+                </div>
+                <div className="mt-3">
+                    <span className={`px-4 py-1 text-sm font-bold uppercase rounded-full ${overallResult.status === 'PASS' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'} print:text-xs`}>
+                        {overallResult.status}
+                    </span>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Component for Subject Breakdown Table
+const SubjectBreakdownTable = ({ breakdown, timeTaken }: { breakdown: any[], timeTaken: number }) => (
+    <section className="mb-8 print:mb-6">
+        <h3 className="text-lg font-bold text-gray-700 mb-3 border-b-2 border-blue-400 pb-1 uppercase print:text-base">Subject Performance Breakdown</h3>
+        <table className="min-w-full divide-y divide-gray-200 shadow-md rounded-lg overflow-hidden print:shadow-none print:border print:border-gray-400">
+            <thead className="bg-blue-50 print:bg-gray-100">
+                <tr className="text-left text-xs font-semibold uppercase tracking-wider text-blue-700 print:text-gray-700">
+                    <th className="px-6 py-3">Subject</th>
+                    <th className="px-6 py-3 text-center">Total Questions</th>
+                    <th className="px-6 py-3 text-center">Correct Answers</th>
+                    <th className="px-6 py-3 text-right">Score Percentage</th>
+                </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-100 text-sm">
+                {breakdown.map((item, index) => (
+                    <tr key={item.subject} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50 print:bg-white'}>
+                        <td className="px-6 py-3 font-medium text-gray-900">{item.subject}</td>
+                        <td className="px-6 py-3 text-center text-gray-700">{item.questions}</td>
+                        <td className="px-6 py-3 text-center text-green-600 font-semibold">{item.correct}</td>
+                        <td className="px-6 py-3 text-right">
+                            <span className={`font-bold ${item.percentage >= 75 ? 'text-blue-600' : 'text-orange-500'}`}>
+                                {item.percentage.toFixed(1)}%
+                            </span>
+                        </td>
+                    </tr>
+                ))}
+                {/* Total Row */}
+                <tr className="bg-blue-50 font-bold border-t-2 border-blue-400 print:border-gray-600 print:bg-gray-100">
+                    <td className="px-6 py-3 text-blue-700">Total Time Spent:</td>
+                    <td colSpan={3} className="px-6 py-3 text-right text-blue-700">
+                        {timeTaken} minutes
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+);
+
+// Component for Footer (Signature and Disclaimer)
+const ReportFooter = () => (
+    <footer className="mt-10 pt-4 border-t border-gray-300 text-xs text-gray-500 print:mt-6 print:border-gray-500 print:text-gray-700">
+        <div className="flex justify-between items-end mb-4">
+            <div className="w-1/3">
+                <div className="h-0.5 w-3/4 bg-gray-400 mb-1"></div>
+                <p>Candidate Signature</p>
+            </div>
+            <div className="w-1/3 text-right">
+                <div className="h-0.5 w-3/4 ml-auto bg-gray-400 mb-1"></div>
+                <p>Proctor / Examiner Signature</p>
+            </div>
+        </div>
+        <p className="text-center italic">
+            This result is digitally verified and accurate as of the date taken. Any unauthorized alteration is strictly prohibited.
+        </p>
+    </footer>
+);
+
+
+// --- 3. Main CBT Report Component ---
+export const ResultTemplate = ({ data }: { data: any }) => {
+    return (
+        <div className="report-container page-break">
+            <style>
+                {`
+        /* --- 1. Base Container for Screen View --- */
+        .report-container {
+          width: 8.5in; /* Simulate A4/Letter width */
+          margin: 2rem auto;
+          padding: 1in;
+          background: white;
+          box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+          font-family: 'Inter', sans-serif; 
+          border-radius: 0.75rem;
+        }
+        
+        .page-break {
+          page-break-after: always;
+        }
+
+        /* --- 2. Print-Specific Styles (CRITICAL) --- */
+        @media print {
+            .report-container {
+                /* Remove all screen-only styling */
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 0.5in !important; /* Use smaller padding for print */
+                width: 100% !important;
+                min-height: 100vh !important;
+                
+                /* Force black ink for better contrast */
+                color: #000 !important;
+            }
+            * {
+                background: transparent !important;
+                box-shadow: none !important;
+                text-shadow: none !important;
+            }
+            /* Ensure images print clearly */
+            img {
+                filter: grayscale(100%);
+            }
+            /* Handle page breaks for long documents */
+            .subject-breakdown-section, .footer-section {
+                page-break-before: auto;
+                page-break-after: avoid;
+            }
+            table {
+                page-break-inside: auto;
+            }
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            /* Hide the Print button on the print dialog */
+            .no-print {
+              display: none !important;
+            }
+        }
+        
+        /* 3. Utility Styles (Ensure good table spacing) */
+        .table th, .table td {
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+        }
+        `}
+            </style>
+
+            <ReportHeader
+                schoolName={data.schoolName}
+                schoolLogoUrl={data.schoolLogoUrl}
+                examTitle={data.examTitle}
+            />
+
+            <CandidateSummary
+                candidate={data.candidate}
+                overallResult={data.overallResult}
+            />
+
+            <div className="subject-breakdown-section">
+                <SubjectBreakdownTable breakdown={data.subjectBreakdown} timeTaken={data.overallResult.timeTakenMinutes} />
+            </div>
+
+            <ReportFooter />
+        </div>
+    );
+};

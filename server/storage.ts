@@ -136,7 +136,7 @@ export class MemStorage implements IStorage {
     this.questions.set(id, question);
     return question;
   }
-  
+
   // Bulk create questions (useful for imports)
   async createQuestions(insertQuestions: InsertQuestion[]): Promise<Question[]> {
     const out: Question[] = [];
@@ -172,10 +172,10 @@ export class MemStorage implements IStorage {
 
   async createExam(insertExam: InsertExam): Promise<Exam> {
     const id = randomUUID();
-    
+
     // Calculate total points from questions
     let totalPoints = 0;
-    for (const questionId of insertExam.questionIds) {
+    for (const questionId of (insertExam.questionIds || [])) {
       const question = await this.getQuestion(questionId);
       if (question) {
         totalPoints += question.points;
@@ -190,7 +190,8 @@ export class MemStorage implements IStorage {
       duration: insertExam.duration,
       totalPoints,
       passingScore: insertExam.passingScore,
-      questionIds: insertExam.questionIds,
+      questionIds: insertExam.questionIds || [],
+      numberOfQuestionsToDisplay: (insertExam as any).numberOfQuestionsToDisplay ?? null,
       classLevel: (insertExam as any).classLevel ?? null,
       isActive: true,
       createdAt: new Date(),
@@ -277,16 +278,6 @@ export class MemStorage implements IStorage {
     return result;
   }
 
-  // Bulk create questions (useful for imports)
-  async createQuestions(insertQuestions: InsertQuestion[]): Promise<Question[]> {
-    const out: Question[] = [];
-    for (const q of insertQuestions) {
-      const created = await this.createQuestion(q);
-      out.push(created);
-    }
-    return out;
-  }
-
   // Users
   async getUserByUsername(username: string): Promise<User | undefined> {
     return Array.from(this.users.values()).find((u) => u.username === username);
@@ -305,8 +296,18 @@ export class MemStorage implements IStorage {
   }
 
   async createStudent(insertStudent: InsertStudent): Promise<Student> {
+    const existing = Array.from(this.students.values()).find(s => s.studentId === insertStudent.studentId);
+    if (existing) {
+      throw new Error(`Student ID '${insertStudent.studentId}' already exists`);
+    }
     const id = randomUUID();
-    const student: Student = { id, name: insertStudent.name, studentId: insertStudent.studentId };
+    const student: Student = {
+      id,
+      name: insertStudent.name,
+      studentId: insertStudent.studentId,
+      classLevel: insertStudent.classLevel,
+      sex: insertStudent.sex || null
+    };
     this.students.set(id, student);
     this.saveStudentsToDisk();
     return student;
@@ -315,8 +316,13 @@ export class MemStorage implements IStorage {
   async createStudents(insertStudents: InsertStudent[]): Promise<Student[]> {
     const out: Student[] = [];
     for (const s of insertStudents) {
-      const created = await this.createStudent(s);
-      out.push(created);
+      try {
+        const created = await this.createStudent(s);
+        out.push(created);
+      } catch (e) {
+        // skip duplicates in bulk import or handle error
+        // for now we just skip to avoid breaking the whole batch
+      }
     }
     this.saveStudentsToDisk();
     return out;
@@ -325,6 +331,14 @@ export class MemStorage implements IStorage {
   async updateStudent(id: string, data: Partial<Student>): Promise<Student | undefined> {
     const existing = this.students.get(id);
     if (!existing) return undefined;
+
+    if (data.studentId && data.studentId !== existing.studentId) {
+      const duplicate = Array.from(this.students.values()).find(s => s.studentId === data.studentId);
+      if (duplicate) {
+        throw new Error(`Student ID '${data.studentId}' already exists`);
+      }
+    }
+
     const updated = { ...existing, ...data };
     this.students.set(id, updated);
     this.saveStudentsToDisk();
@@ -355,6 +369,6 @@ export const storage = new MemStorage();
 // Seed default admin user (ignore if already exists)
 storage.getUserByUsername("Admin").then((u) => {
   if (!u) {
-    storage.createUser({ username: "Admin", password: "admin" }).catch(() => {});
+    storage.createUser({ username: "Admin", password: "admin" }).catch(() => { });
   }
-}).catch(() => {});
+}).catch(() => { });

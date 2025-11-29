@@ -40,7 +40,7 @@ export default function StudentLoginPage() {
             <h2 className="text-lg font-semibold mb-4">Student Login</h2>
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
-                <Label htmlFor="name">Name</Label>
+                <Label htmlFor="name">Student Name</Label>
                 <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
               </div>
               <div className="mb-4">

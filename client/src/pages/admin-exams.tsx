@@ -79,7 +79,7 @@ export default function AdminExams() {
               Create Exam
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <ExamForm
               questions={questions || []}
               onSuccess={() => {

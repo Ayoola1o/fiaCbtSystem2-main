@@ -14,8 +14,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Eye, CheckCircle, XCircle } from "lucide-react";
+import { Search, Eye, CheckCircle, XCircle, Printer } from "lucide-react";
 import type { Result, Exam } from "@shared/schema";
+import { ResultTemplate } from "@/components/ResultTemplate";
+import { createRoot } from "react-dom/client";
 
 export default function AdminResults() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -28,6 +30,9 @@ export default function AdminResults() {
     queryKey: ["/api/exams"],
   });
 
+  const { data: questions } = useQuery<any[]>({ queryKey: ["/api/questions"] });
+  const { data: students } = useQuery<any[]>({ queryKey: ["/api/students"] });
+
   const filteredResults = results?.filter(
     (result) =>
       result.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -36,6 +41,85 @@ export default function AdminResults() {
 
   const getExamTitle = (examId: string) => {
     return exams?.find((e) => e.id === examId)?.title || "Unknown Exam";
+  };
+
+  const handlePrint = (result: Result) => {
+    const exam = exams?.find(e => e.id === result.examId);
+    const student = students?.find(s => s.studentId === result.studentId);
+
+    // Calculate breakdown
+    const breakdown: any[] = [];
+    if (questions && exam) {
+      const examQuestions = questions.filter(q => exam.questionIds.includes(q.id));
+      const subjects = [...new Set(examQuestions.map(q => q.subject))];
+
+      subjects.forEach(subject => {
+        const subjectQuestions = examQuestions.filter(q => q.subject === subject);
+        const totalQuestions = subjectQuestions.length;
+        let correctCount = 0;
+
+        subjectQuestions.forEach(q => {
+          if (result.correctAnswers && result.correctAnswers[q.id]) {
+            correctCount++;
+          }
+        });
+
+        breakdown.push({
+          subject,
+          questions: totalQuestions,
+          correct: correctCount,
+          percentage: totalQuestions > 0 ? (correctCount / totalQuestions) * 100 : 0
+        });
+      });
+    }
+
+    const printData = {
+      schoolName: "Faith Immaculate Academy",
+      schoolLogoUrl: "https://placehold.co/150x50/3b82f6/ffffff?text=FIA+CBT",
+      examTitle: exam?.title || "Exam Result",
+      candidate: {
+        name: result.studentName,
+        studentId: result.studentId,
+        gradeLevel: student?.classLevel || "-",
+        date: new Date(result.completedAt).toLocaleDateString(),
+      },
+      overallResult: {
+        score: result.score,
+        total: result.totalPoints,
+        percentage: result.percentage,
+        timeTakenMinutes: 60, // Mocking time taken
+        status: result.passed ? 'PASS' : 'FAIL',
+      },
+      subjectBreakdown: breakdown
+    };
+
+    // Create a hidden iframe or new window to print
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write('<html><head><title>Print Result</title>');
+      // Copy styles from current document
+      const styles = document.querySelectorAll('style, link[rel="stylesheet"]');
+      styles.forEach(style => {
+        printWindow.document.head.appendChild(style.cloneNode(true));
+      });
+      // Add Tailwind CDN if local styles fail to load in new window (fallback)
+      printWindow.document.write('<script src="https://cdn.tailwindcss.com"></script>');
+      printWindow.document.write('</head><body><div id="print-root"></div></body></html>');
+
+      printWindow.document.close();
+
+      // Wait for resources to load then render and print
+      printWindow.onload = () => {
+        const root = createRoot(printWindow.document.getElementById('print-root')!);
+        root.render(<ResultTemplate data={printData} />);
+
+        // Small delay to ensure React renders
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 500);
+      };
+    }
   };
 
   return (
@@ -103,9 +187,8 @@ export default function AdminResults() {
                     </TableCell>
                     <TableCell>
                       <span
-                        className={`text-lg font-semibold ${
-                          result.passed ? "text-green-600" : "text-red-600"
-                        }`}
+                        className={`text-lg font-semibold ${result.passed ? "text-green-600" : "text-red-600"
+                          }`}
                       >
                         {result.percentage}%
                       </span>
@@ -142,15 +225,10 @@ export default function AdminResults() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
-                          const printContent = `Student: ${result.studentName}\nID: ${result.studentId}\nExam: ${getExamTitle(result.examId)}\nScore: ${result.score}/${result.totalPoints}\nPercentage: ${result.percentage}%\nStatus: ${result.passed ? "Passed" : "Failed"}\nCompleted: ${new Date(result.completedAt).toLocaleString()}`;
-                          const win = window.open('', '', 'width=600,height=400');
-                          win.document.write(`<pre>${printContent}</pre>`);
-                          win.print();
-                          win.close();
-                        }}
+                        onClick={() => handlePrint(result)}
                         data-testid={`button-print-${result.id}`}
                       >
+                        <Printer className="h-4 w-4 mr-2" />
                         Print
                       </Button>
                     </TableCell>

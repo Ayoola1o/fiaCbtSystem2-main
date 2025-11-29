@@ -280,13 +280,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Student login (Student Name as username, Student ID as password)
   app.post("/api/students/login", async (req, res) => {
     try {
-      const { username, password, studentName, studentId } = req.body as any;
-      const name = username || studentName;
+      const { username, password, studentName, studentId, name: bodyName } = req.body as any;
+      const name = username || studentName || bodyName;
       const sid = password || studentId;
-      if (!name || !sid) return res.status(400).json({ error: "username and password required" });
 
-      const student = (await storage.getStudents()).find(s => s.name === name && s.studentId === sid);
-      if (!student) return res.status(401).json({ error: "Invalid credentials" });
+      if (!name || !sid) {
+        return res.status(400).json({ error: "Student name and ID are required" });
+      }
+
+      // Get all students and perform case-insensitive search
+      const allStudents = await storage.getStudents();
+      const student = allStudents.find(s =>
+        s.name.toLowerCase().trim() === name.toLowerCase().trim() &&
+        s.studentId.toLowerCase().trim() === sid.toLowerCase().trim()
+      );
+
+      if (!student) {
+        console.log(`Login failed for name: "${name}", ID: "${sid}"`);
+        console.log(`Available students:`, allStudents.map(s => ({ name: s.name, id: s.studentId })));
+        return res.status(401).json({ error: "Invalid student name or ID. Please check your credentials." });
+      }
 
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -300,6 +313,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ id: student.id, name: student.name, classLevel: (student as any).classLevel });
     } catch (error) {
+      console.error("Student login error:", error);
       res.status(500).json({ error: "Failed to login" });
     }
   });
@@ -358,7 +372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (exam.numberOfQuestionsToDisplay && exam.numberOfQuestionsToDisplay > 0 && exam.numberOfQuestionsToDisplay < sessionQuestionIds.length) {
         sessionQuestionIds = sessionQuestionIds.slice(0, exam.numberOfQuestionsToDisplay);
       }
-      
+
       const sessionData = {
         ...validatedData,
         sessionQuestionIds,
@@ -428,7 +442,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const isCorrect =
           studentAnswer &&
           studentAnswer.trim().toLowerCase() ===
-            question.correctAnswer.trim().toLowerCase();
+          question.correctAnswer.trim().toLowerCase();
         correctAnswers[question.id] = isCorrect;
         if (isCorrect) {
           score += question.points;
@@ -502,27 +516,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const payload = req.body;
 
       if (Array.isArray(payload)) {
-        // array of {name, studentId}
-        const rows = payload as { name?: string; studentId?: string }[];
+        // array of {name, studentId, classLevel, sex}
+        const rows = payload as { name?: string; studentId?: string; classLevel?: string; sex?: string }[];
         const toCreate = rows
-          .filter((r) => r && r.name && r.studentId)
-          .map((r) => ({ name: r.name as string, studentId: r.studentId as string }));
+          .filter((r) => r && r.name && r.studentId && r.classLevel)
+          .map((r) => ({
+            name: r.name as string,
+            studentId: r.studentId as string,
+            classLevel: r.classLevel as any,
+            sex: r.sex as any
+          }));
         const created = await storage.createStudents(toCreate);
         return res.status(201).json(created);
       }
 
       if (payload && typeof payload === "object") {
-        const { name, studentId } = payload as { name?: string; studentId?: string };
-        if (!name || !studentId) {
-          return res.status(400).json({ error: "name and studentId required" });
+        const { name, studentId, classLevel, sex } = payload as any;
+        if (!name || !studentId || !classLevel) {
+          return res.status(400).json({ error: "name, studentId, and classLevel required" });
         }
-        const created = await storage.createStudent({ name, studentId });
+        const created = await storage.createStudent({ name, studentId, classLevel, sex });
         return res.status(201).json(created);
       }
 
       res.status(400).json({ error: "Invalid payload" });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to create students" });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to create students" });
     }
   });
 
