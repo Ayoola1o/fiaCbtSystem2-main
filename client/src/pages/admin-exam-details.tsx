@@ -17,11 +17,6 @@ export default function AdminExamDetails() {
   const { toast } = useToast();
   const { data: exam, isLoading } = useQuery<any>({
     queryKey: ["/api/exams", id],
-    queryFn: async () => {
-      const res = await fetch(`/api/exams/${id}`);
-      if (!res.ok) throw new Error("Failed to fetch exam");
-      return res.json();
-    },
   });
 
   const [formData, setFormData] = useState<any>(null);

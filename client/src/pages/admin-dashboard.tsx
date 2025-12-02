@@ -24,22 +24,7 @@ export default function AdminDashboard() {
 
   const isLoading = examsLoading || questionsLoading || resultsLoading;
 
-  const [studentsList, setStudentsList] = useState<{ id: string; name: string; studentId: string }[]>([]);
 
-  const fetchStudents = async () => {
-    try {
-      const r = await fetch("/api/students");
-      if (!r.ok) return;
-      const data = await r.json();
-      setStudentsList(data || []);
-    } catch (e) {
-      // ignore
-    }
-  };
-
-  useEffect(() => {
-    fetchStudents();
-  }, []);
 
   const stats = {
     totalExams: exams?.length || 0,
@@ -60,9 +45,9 @@ export default function AdminDashboard() {
     const subjectResults = results?.filter((r) => r.examId === exam.id) || [];
     const avgScore = subjectResults.length > 0
       ? Math.round(
-          subjectResults.reduce((sum, r) => sum + r.percentage, 0) /
-            subjectResults.length
-        )
+        subjectResults.reduce((sum, r) => sum + r.percentage, 0) /
+        subjectResults.length
+      )
       : 0;
 
     acc.push({
@@ -221,9 +206,8 @@ export default function AdminDashboard() {
                       </div>
                       <div className="text-right">
                         <p
-                          className={`text-lg font-semibold ${
-                            result.passed ? "text-green-600" : "text-red-600"
-                          }`}
+                          className={`text-lg font-semibold ${result.passed ? "text-green-600" : "text-red-600"
+                            }`}
                         >
                           {result.percentage}%
                         </p>

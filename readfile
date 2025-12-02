@@ -4,3 +4,10 @@ kill <OLD_PID>
 # then restart the dev server
 npm run dev
 
+/Users/PC/Desktop/fiaCbtSystem2-main/client/src/lib/firebase.ts:47:14
+45 |  }
+46 |  
+47 |  const auth = getAuth(app);
+   |               ^
+48 |  
+49 |  export { app, db, auth }

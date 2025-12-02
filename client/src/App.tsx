@@ -24,8 +24,8 @@ function Router() {
     <Switch>
       {/* Public Routes */}
       <Route path="/" component={Home} />
-      <Route path="/student" component={StudentPortal} />
-      <Route path="/student/login" component={StudentLogin} />
+      <Route path="/student-portal" component={StudentPortal} />
+      <Route path="/student-login" component={StudentLogin} />
       <Route path="/exam/:id/start" component={ExamStart} />
       <Route path="/exam/:examId/session/:sessionId" component={ExamSession} />
       <Route path="/exam/result/:resultId" component={ExamResult} />

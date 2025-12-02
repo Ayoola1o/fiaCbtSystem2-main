@@ -51,7 +51,7 @@ export default function Home() {
                 Access your exams and view your results in a distraction-free
                 environment.
               </p>
-              <Link href="/student">
+              <Link href="/student-portal">
                 <Button size="lg" className="w-full" data-testid="button-student-portal">
                   Enter as Student
                 </Button>

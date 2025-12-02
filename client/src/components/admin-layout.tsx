@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const style = {
@@ -18,8 +19,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   async function handleLogout() {
     try {
       setIsLoggingOut(true);
-      const res = await fetch("/api/admin/logout", { method: "POST" });
-      if (!res.ok) throw new Error("Logout failed");
+      await apiRequest("POST", "/api/admin/logout");
       toast({ title: "Logged out", description: "You have been logged out." });
       setLocation("/");
     } catch (err) {

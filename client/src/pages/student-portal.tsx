@@ -1,102 +1,58 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Clock, BookOpen, CheckCircle } from "lucide-react";
-import type { Exam } from "@shared/schema";
+import { Clock, BookOpen, CheckCircle, LogOut } from "lucide-react";
+import type { Exam, Student } from "@shared/schema";
 
 export default function StudentPortal() {
-  const [studentName, setStudentName] = useState("");
-  const [studentId, setStudentId] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [, setLocation] = useLocation();
+  const [student, setStudent] = useState<Student | null>(null);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem("student_user");
+    if (!userStr) {
+      setLocation("/student-login");
+      return;
+    }
+    try {
+      setStudent(JSON.parse(userStr));
+    } catch (e) {
+      console.error("Invalid student session", e);
+      localStorage.removeItem("student_user");
+      setLocation("/student-login");
+    }
+  }, [setLocation]);
 
   const { data: exams, isLoading } = useQuery<Exam[]>({
     queryKey: ["/api/exams"],
-    enabled: isLoggedIn,
+    enabled: !!student,
   });
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (studentName.trim() && studentId.trim()) {
-      setIsLoggedIn(true);
-    }
+  const handleLogout = () => {
+    localStorage.removeItem("student_user");
+    setLocation("/student-login");
   };
 
-  if (!isLoggedIn) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-8">
-          <Link href="/">
-            <Button variant="ghost" className="mb-6" data-testid="button-back">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Home
-            </Button>
-          </Link>
-
-          <div className="mx-auto max-w-md">
-            <Card>
-              <CardHeader className="space-y-1">
-                <CardTitle className="text-2xl">Student Login</CardTitle>
-                <CardDescription>
-                  Enter your details to access available exams
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleLogin} className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="studentName">Full Name</Label>
-                    <Input
-                      id="studentName"
-                      type="text"
-                      placeholder="Enter your full name"
-                      value={studentName}
-                      onChange={(e) => setStudentName(e.target.value)}
-                      required
-                      data-testid="input-student-name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="studentId">Student ID</Label>
-                    <Input
-                      id="studentId"
-                      type="text"
-                      placeholder="Enter your student ID"
-                      value={studentId}
-                      onChange={(e) => setStudentId(e.target.value)}
-                      required
-                      data-testid="input-student-id"
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" data-testid="button-login">
-                    Continue to Exams
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (!student) return null; // Or a loading spinner while redirecting
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Welcome, {studentName}</h1>
-            <p className="text-muted-foreground">Student ID: {studentId}</p>
+            <h1 className="text-3xl font-bold">Welcome, {student.name}</h1>
+            <p className="text-muted-foreground">Student ID: {student.studentId}</p>
           </div>
           <Button
             variant="outline"
-            onClick={() => setIsLoggedIn(false)}
+            onClick={handleLogout}
             data-testid="button-logout"
           >
+            <LogOut className="mr-2 h-4 w-4" />
             Logout
           </Button>
         </div>
@@ -156,7 +112,7 @@ export default function StudentPortal() {
                           Passing: {exam.passingScore}%
                         </span>
                       </div>
-                      <Link href={`/exam/${exam.id}/start?studentName=${encodeURIComponent(studentName)}&studentId=${encodeURIComponent(studentId)}`}>
+                      <Link href={`/exam/${exam.id}/start?studentName=${encodeURIComponent(student.name)}&studentId=${encodeURIComponent(student.studentId)}`}>
                         <Button className="w-full" data-testid={`button-start-exam-${exam.id}`}>
                           Start Exam
                         </Button>

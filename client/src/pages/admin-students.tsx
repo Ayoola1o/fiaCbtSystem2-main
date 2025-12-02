@@ -12,19 +12,25 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 
+import {
+  getStudents,
+  addStudent,
+  updateStudent,
+  deleteStudent,
+  uploadStudents
+} from "@/lib/api";
+
 export default function AdminStudents() {
-  const [studentsList, setStudentsList] = useState<{ id: string; name: string; studentId: string; classLevel?: string; sex?: string }[]>([]);
+  const [studentsList, setStudentsList] = useState<{ id: string; name: string; studentId: string; classLevel?: string; sex?: string | null }[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
 
   // Edit state
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [editingStudent, setEditingStudent] = useState<{ id: string; name: string; studentId: string; classLevel?: string; sex?: string } | null>(null);
+  const [editingStudent, setEditingStudent] = useState<{ id: string; name: string; studentId: string; classLevel?: string; sex?: string | null } | null>(null);
 
   const fetchStudents = async () => {
     try {
-      const r = await fetch("/api/students");
-      if (!r.ok) return;
-      const data = await r.json();
+      const data = await getStudents();
       setStudentsList(data || []);
     } catch (e) {
       // ignore
@@ -39,17 +45,13 @@ export default function AdminStudents() {
     e.preventDefault();
     if (!editingStudent) return;
     try {
-      const resp = await fetch(`/api/students/${editingStudent.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: editingStudent.name,
-          studentId: editingStudent.studentId,
-          classLevel: editingStudent.classLevel,
-          sex: editingStudent.sex
-        }),
+      await updateStudent(editingStudent.id, {
+        name: editingStudent.name,
+        studentId: editingStudent.studentId,
+        // @ts-ignore
+        classLevel: editingStudent.classLevel,
+        sex: editingStudent.sex
       });
-      if (!resp.ok) throw new Error("Update failed");
       setIsEditOpen(false);
       setEditingStudent(null);
       fetchStudents();
@@ -138,15 +140,7 @@ export default function AdminStudents() {
                   }
 
                   try {
-                    const resp = await fetch("/api/students", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ name, studentId, classLevel, sex }),
-                    });
-                    if (!resp.ok) {
-                      const err = await resp.json();
-                      throw new Error(err.error || "Failed to add student");
-                    }
+                    await addStudent({ name, studentId, classLevel, sex });
                     alert("Student added");
                     if (nameEl) nameEl.value = "";
                     if (idEl) idEl.value = "";
@@ -186,12 +180,7 @@ export default function AdminStudents() {
                       alert("No valid rows found in CSV");
                       return;
                     }
-                    const resp = await fetch("/api/students", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify(rows),
-                    });
-                    if (!resp.ok) throw new Error("Upload failed");
+                    await uploadStudents(rows as any);
                     alert("Uploaded " + rows.length + " students");
                     input.value = "";
                     fetchStudents();
@@ -303,8 +292,7 @@ export default function AdminStudents() {
                             onClick={async () => {
                               if (!confirm(`Delete ${s.name}?`)) return;
                               try {
-                                const resp = await fetch(`/api/students/${s.id}`, { method: "DELETE" });
-                                if (!resp.ok && resp.status !== 204) throw new Error("Delete failed");
+                                await deleteStudent(s.id);
                                 fetchStudents();
                               } catch (e) {
                                 // eslint-disable-next-line no-console

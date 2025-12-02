@@ -123,19 +123,13 @@ export default function AdminQuestions() {
     const errors: any[] = [];
     for (let i = 0; i < rows.length; i += chunkSize) {
       const chunk = rows.slice(i, i + chunkSize);
-      const resp = await fetch("/api/questions/bulk", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(chunk),
-      });
-      if (!resp.ok) {
-        const txt = await resp.text();
-        errors.push({ chunkIndex: i / chunkSize, error: txt });
-        continue;
+      try {
+        const body = await apiRequest("POST", "/api/questions/bulk", chunk) as any;
+        uploaded += body.insertedCount || 0;
+        if (body.errors && body.errors.length) errors.push(...body.errors);
+      } catch (e: any) {
+        errors.push({ chunkIndex: i / chunkSize, error: e.message });
       }
-      const body = await resp.json();
-      uploaded += body.insertedCount || 0;
-      if (body.errors && body.errors.length) errors.push(...body.errors);
       setUploadProgress({ uploaded, total: rows.length });
     }
     setUploadProgress(null);
