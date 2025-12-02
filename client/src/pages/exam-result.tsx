@@ -48,7 +48,7 @@ export default function ExamResult() {
 
   const correctCount = Object.values(result.correctAnswers).filter(Boolean).length;
   const totalQuestions = Object.keys(result.correctAnswers).length;
-  const backLink = isAdminResult ? "/admin/results" : "/student";
+  const backLink = isAdminResult ? "/admin/results" : "/student-portal";
   const backText = isAdminResult ? "Back to Results" : "Back to Exams";
 
   return (
@@ -59,9 +59,8 @@ export default function ExamResult() {
           <div className="mb-8 text-center">
             <div className="mb-4 flex justify-center">
               <div
-                className={`flex h-24 w-24 items-center justify-center rounded-full ${
-                  result.passed ? "bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400" : "bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400"
-                }`}
+                className={`flex h-24 w-24 items-center justify-center rounded-full ${result.passed ? "bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400" : "bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400"
+                  }`}
               >
                 {result.passed ? (
                   <Award className="h-12 w-12" />
@@ -193,7 +192,7 @@ export default function ExamResult() {
                               {question.questionText}
                             </p>
                           </div>
-                          
+
                           <div className="space-y-2">
                             <div>
                               <p className="text-sm font-medium text-muted-foreground">
@@ -203,7 +202,7 @@ export default function ExamResult() {
                                 {studentAnswer || "Not answered"}
                               </p>
                             </div>
-                            
+
                             {!isCorrect && (
                               <div>
                                 <p className="text-sm font-medium text-muted-foreground">

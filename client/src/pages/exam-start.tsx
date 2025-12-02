@@ -34,7 +34,8 @@ export default function ExamStart() {
     onSuccess: (session) => {
       if (!session || !session.id) {
         // defensive: session id missing — show toast and do not redirect to invalid route
-        toast({ title: "Failed to start session", description: "Server did not return a valid session id." });
+        // toast({ title: "Failed to start session", description: "Server did not return a valid session id." });
+        console.error("Failed to start session: Server did not return a valid session id.");
         return;
       }
       queryClient.invalidateQueries({ queryKey: ["/api/exam-sessions"] });
@@ -44,7 +45,7 @@ export default function ExamStart() {
 
   useEffect(() => {
     if (!studentName || !studentId) {
-      setLocation("/student");
+      setLocation("/student-portal");
     }
   }, [studentName, studentId, setLocation]);
 
@@ -84,7 +85,7 @@ export default function ExamStart() {
               </AlertDescription>
             </Alert>
             <Button
-              onClick={() => setLocation("/student")}
+              onClick={() => setLocation("/student-portal")}
               className="mt-4"
               data-testid="button-back-to-exams"
             >
@@ -162,7 +163,7 @@ export default function ExamStart() {
               <div className="flex gap-4">
                 <Button
                   variant="outline"
-                  onClick={() => setLocation("/student")}
+                  onClick={() => setLocation("/student-portal")}
                   data-testid="button-cancel"
                 >
                   Cancel

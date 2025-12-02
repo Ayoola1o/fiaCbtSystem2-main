@@ -261,7 +261,7 @@ export const submitExamSession = async (sessionId: string, answers: Record<strin
         if (q) {
             sessionTotalPoints += q.points;
             const studentAnswer = answers[qId];
-            const isCorrect = studentAnswer && studentAnswer.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase();
+            const isCorrect = !!studentAnswer && studentAnswer.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase();
             correctAnswers[qId] = isCorrect;
             if (isCorrect) score += q.points;
         }
