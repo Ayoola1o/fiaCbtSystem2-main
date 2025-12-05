@@ -6,7 +6,7 @@
   "description": "Faith Immaculate Academy CBT - Computer-based testing system",
   "scripts": {
     "dev": "tsx server/index.ts",
-    "build": "cd client && npm install && vite build",
+    "build": "npm install --prefix client && vite build",
     "start": "vite preview",
     "check": "tsc",
     "init-firebase": "tsx scripts/init-firebase.ts"
